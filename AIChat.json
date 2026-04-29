@@ -3,20 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "options": {}
-      },
-      "id": "153dbe0f-92c9-4101-989f-a3156e70c7cc",
-      "name": "When chat message received",
-      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
-      "position": [
-        384,
-        256
-      ],
-      "webhookId": "ebdeba3f-6b4f-49f3-ba0a-8253dd226161",
-      "typeVersion": 1.1
-    },
-    {
-      "parameters": {
         "model": "qwen2.5:7b",
         "options": {}
       },
@@ -24,8 +10,8 @@
       "name": "Ollama Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "position": [
-        592,
-        480
+        608,
+        432
       ],
       "typeVersion": 1,
       "credentials": {
@@ -61,13 +47,22 @@
       "name": "Sticky Note1",
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        720,
-        464
+        912,
+        512
       ],
       "typeVersion": 1
     },
     {
-      "parameters": {},
+      "parameters": {
+        "messages": {
+          "messageValues": [
+            {
+              "type": "=SystemMessagePromptTemplate",
+              "message": "=Tu es Astra, assistant du Musée Astral Nova.\n\nLe Musée Astral Nova est un musée fictif sur l’astrologie, les constellations et les mythes célestes.\n\nTon rôle :\n1. Répondre au client de façon claire et professionnelle.\n2. Préparer un message interne pour l’équipe de vente.\n\nImportant :\n- Réponds uniquement avec les deux sections ci-dessous.\n- Ne fais pas de JSON.\n- Ne change jamais les titres CLIENT_MESSAGE et SALES_MESSAGE.\n- Si le client veut réserver mais qu’il manque des informations, demande les informations manquantes.\n- Pour réserver, il faut : nom, email, date, heure, nombre de personnes.\n- Les horaires possibles sont : 10:00, 11:30, 14:00, 15:30, 17:00.\n- Le musée est fermé le lundi.\n- Ne confirme jamais une réservation définitivement.\n- Dis plutôt que la demande de réservation a été transmise à l’équipe.\n\nInformations musée :\n- Nom : Musée Astral Nova\n- Adresse : 18 Rue des Constellations, Paris\n- Durée de visite : 1h15\n- Prix adulte : 14€\n- Prix étudiant : 10€\n- Prix enfant : 8€\n\nMessage du client :\n{{ $json.chatInput }}\n\nFormat obligatoire :\n\nCLIENT_MESSAGE:\nTexte à envoyer au client.\n\nSALES_MESSAGE:\nTexte interne à envoyer à l’équipe de vente."
+            }
+          ]
+        }
+      },
       "id": "f64eddc2-f865-4097-977b-006d9bbb2599",
       "name": "Chat LLM Chain",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -76,6 +71,68 @@
         256
       ],
       "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "jsCode": "const text =\n  $json.text ||\n  $json.output ||\n  $json.response ||\n  $json.message ||\n  \"\";\n\nconst clientMatch = text.match(/CLIENT_MESSAGE:\\s*([\\s\\S]*?)\\s*SALES_MESSAGE:/i);\nconst salesMatch = text.match(/SALES_MESSAGE:\\s*([\\s\\S]*)/i);\n\nreturn [\n  {\n    json: {\n      client_message: clientMatch ? clientMatch[1].trim() : text.trim(),\n      sales_message: salesMatch ? salesMatch[1].trim() : \"Aucun message interne généré.\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        208
+      ],
+      "id": "9807555c-3c7f-4cb0-aacd-68bead9f8713",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.client_message }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        112
+      ],
+      "id": "51cb60f8-9db1-41b4-9611-3fa5fccb0e30",
+      "name": "Chat",
+      "webhookId": "c09655e5-0f22-4a13-8f88-1ce521e86571"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1499084084138217482/W6caypZ_B-FhpdHA_k94dz0CfBF4omdzJJFe6yQIUaFiNpKtudTW-xcBUqrN5su7ph15",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": {{ JSON.stringify($json.sales_message) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1184,
+        304
+      ],
+      "id": "696146fb-5fda-4f09-939f-3132fb63c8ca",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        432,
+        256
+      ],
+      "id": "71378732-fc07-4e9e-935f-fb24d1dda35b",
+      "name": "When chat message received",
+      "webhookId": "375e926e-1c08-4175-95c6-cb1af4df80b5"
     }
   ],
   "pinData": {},
@@ -86,6 +143,33 @@
           {
             "node": "Chat LLM Chain",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Chat",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
             "index": 0
           }
         ]
@@ -108,7 +192,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "81685d66-3e98-4d60-9e27-ea2b8cad5ae7",
+  "versionId": "a6d1ac2c-71e5-411f-893f-4effcf1bd813",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "980c24a176fcc37d984f79d7f5f99837e7e8b083813a134c6fe0d2a0c621faf7"
