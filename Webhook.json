@@ -1,0 +1,431 @@
+{
+  "name": "Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "check-age",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        640
+      ],
+      "id": "3a777562-06f0-4ed8-b8da-cc6f55564b45",
+      "name": "Webhook",
+      "webhookId": "7eed92a1-5cc2-4012-b0a9-2d6021cf3ada"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "WSXZ3AflxVOUjtRS",
+          "mode": "list",
+          "cachedResultName": "Person",
+          "cachedResultUrl": "/projects/U8uBIUdnYdoSrPPR/datatables/WSXZ3AflxVOUjtRS"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        96
+      ],
+      "id": "c57e5f9c-fb73-404a-b8c0-7fe84265837f",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "Person",
+        "columns": {
+          "column": [
+            {
+              "name": "name"
+            },
+            {
+              "name": "age",
+              "type": "number"
+            },
+            {
+              "name": "isAdult",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        -352
+      ],
+      "id": "cd8989b1-2920-4b85-a1d3-ac0ef2d1d127",
+      "name": "Create a data table"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "WSXZ3AflxVOUjtRS",
+          "mode": "list",
+          "cachedResultName": "Person",
+          "cachedResultUrl": "/projects/U8uBIUdnYdoSrPPR/datatables/WSXZ3AflxVOUjtRS"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "isAdult",
+              "condition": "isTrue"
+            },
+            {
+              "keyName": "isAdult",
+              "condition": "isFalse"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        -128
+      ],
+      "id": "3fe6eff0-18cb-4885-ba83-ad40dfc04351",
+      "name": "Clear Datatable"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "944de7d8-52d7-42aa-902b-66fdab310774",
+              "name": "body.name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "125cf7ee-0083-49de-a65a-b8f119bb1f1b",
+              "name": "body.age",
+              "value": "={{ $json.body.age }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        640
+      ],
+      "id": "e8de66f0-c054-4ed0-8aeb-6107f2341037",
+      "name": "Check input type",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1d2d3465-b8ad-4e87-8f50-473f93228b6e",
+              "leftValue": "={{ $json.body.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "0c899a21-47fc-4563-a2ca-d146bd85226f",
+              "leftValue": "={{ $json.body.age }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        544
+      ],
+      "id": "fc31b470-5238-4915-aa5d-4bae79bcd88f",
+      "name": "Check input exist",
+      "retryOnFail": false,
+      "notesInFlow": false,
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Les champs ne sont pas du bon type",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        736
+      ],
+      "id": "bc07b65a-1472-4525-b06e-2f7ce654b7f4",
+      "name": "Type Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Les champs name et age sont requis",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        640,
+        640
+      ],
+      "id": "bd7ad7f7-d3e3-4f0b-a2b9-80c99fde24dd",
+      "name": "Missing params"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  ...$input.first().json.body,\n  isAdult: $input.first().json.body.age >= 18\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        448
+      ],
+      "id": "6924506b-f487-4a3a-92b0-4721fdb9d5c6",
+      "name": "Add isAdult",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "WSXZ3AflxVOUjtRS",
+          "mode": "list",
+          "cachedResultName": "Person",
+          "cachedResultUrl": "/projects/U8uBIUdnYdoSrPPR/datatables/WSXZ3AflxVOUjtRS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "isAdult": "={{ $json.isAdult }}",
+            "name": "={{ $json.name }}",
+            "age": "={{ $json.age }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "age",
+              "displayName": "age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "isAdult",
+              "displayName": "isAdult",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        368
+      ],
+      "id": "615aec52-cad9-4c83-a503-bd897da245f9",
+      "name": "Insert",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.name }} à été ajouté à la base avec succès",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1088,
+        320
+      ],
+      "id": "e81cb59a-e172-4cb7-ae41-8a2799eeb8ca",
+      "name": "Success input"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Erreur interne",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1088,
+        544
+      ],
+      "id": "40b39397-ce32-4dc9-9814-02a70ee289cf",
+      "name": "Internal Error"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check input type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check input type": {
+      "main": [
+        [
+          {
+            "node": "Check input exist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Type Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check input exist": {
+      "main": [
+        [
+          {
+            "node": "Add isAdult",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Missing params",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Add isAdult": {
+      "main": [
+        [
+          {
+            "node": "Insert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Internal Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert": {
+      "main": [
+        [
+          {
+            "node": "Success input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Internal Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3e33b952-fcaf-4a67-9677-0613802bb542",
+  "meta": {
+    "instanceId": "980c24a176fcc37d984f79d7f5f99837e7e8b083813a134c6fe0d2a0c621faf7"
+  },
+  "id": "75fTE1M4qAdxoX2v",
+  "tags": []
+}

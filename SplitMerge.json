@@ -1,0 +1,178 @@
+{
+  "name": "SplitMerge",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        32
+      ],
+      "id": "0693c373-a17a-414e-b184-6bc424434d21",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { name: \"Alice\", age: 17 } },\n  { json: { name: \"Bob\", age: 14 } },\n  { json: { name: \"Dylan\", age: 9 } },\n  { json: { name: \"John\", age: 32 } },\n  { json: { name: \"Doe\", age: 43 } },\n  { json: { name: \"Gauthier\", age: 21 } },\n  { json: { name: \"Pierre\", age: 23 } },\n  { json: { name: \"Didier\", age: 67 } }\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        32
+      ],
+      "id": "28ac0cbd-de7a-4dc2-8971-4598023a5dc7",
+      "name": "Data MOK"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  item.json.isAdult = item.json.age >= 18;\n  return item\n})"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        32
+      ],
+      "id": "f1919dc3-3528-4398-ada5-fb5b15b66601",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "name, age",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        672,
+        32
+      ],
+      "id": "3194d5fa-3888-4b87-8ff8-e34c1499214a",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        32
+      ],
+      "id": "b33a5d08-d0ae-4391-89bd-e3c49b940109",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  item.json.timestamp = DateTime.now()\n  return item\n})"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -64
+      ],
+      "id": "8e25d7e8-64b2-4885-af15-80ee34cb3362",
+      "name": "Split Top"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  item.json.timestamp = DateTime.now()\n  return item\n})"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        128
+      ],
+      "id": "d40e8bb9-4466-4572-8ef1-4bfd96bc58de",
+      "name": "Split Bottom"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Data MOK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data MOK": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Split Bottom",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Top",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Top": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Bottom": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "058d4cad-1671-4a9b-a4b4-9dc5f9d28943",
+  "meta": {
+    "instanceId": "980c24a176fcc37d984f79d7f5f99837e7e8b083813a134c6fe0d2a0c621faf7"
+  },
+  "id": "jqRsrTsKCF2AoHYn",
+  "tags": []
+}
