@@ -1,0 +1,223 @@
+{
+  "name": "Text to SQL",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "56b76f29-e2d1-4566-a19b-0ad0dc979b4e",
+      "name": "When chat message received",
+      "webhookId": "e49f10a9-ba39-4485-ad5b-4cd181d4d25c"
+    },
+    {
+      "parameters": {
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Tu es un générateur strict de requêtes SQL.  Ton rôle est de transformer la demande utilisateur en UNE SEULE requête SQL valide, en te basant uniquement sur le schéma de base de données fourni.  Contexte disponible : - Demande utilisateur : {{ $json.chatInput }} - Schéma de base de données : {{ $json['Shema context'] }}  Règles obligatoires : 1. Tu dois retourner uniquement la requête SQL finale. 2. Tu ne dois ajouter aucun texte, aucune explication, aucun markdown, aucun bloc ```sql. 3. Tu dois utiliser uniquement les tables et colonnes présentes dans le schéma fourni. 4. Si la demande utilisateur est en français, traduis mentalement la demande en anglais si cela t’aide à mieux comprendre l’intention, mais ne retourne jamais cette traduction. 5. La requête doit être directement exécutable. 6. Si la demande est ambiguë, fais l’hypothèse la plus logique à partir du schéma. 7. Si la demande ne peut pas être traduite en SQL avec le schéma fourni, retourne : SELECT NULL; 8. Par défaut, génère uniquement des requêtes de lecture : SELECT. 9. Tu ne dois jamais générer de requête destructive ou modificatrice comme INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, REPLACE. 10. Tu ne dois jamais utiliser plusieurs requêtes séparées par des points-virgules. 11. Ajoute une limite raisonnable avec LIMIT si la requête peut retourner beaucoup de résultats. 12. Utilise des alias clairs si nécessaire. 13. Respecte la syntaxe SQL standard compatible PostgreSQL, sauf indication contraire.  Retour attendu : Une seule requête SQL brute, sans commentaire.\nSi tu n'as pas ce qu'il faut pour générer une bonne requête sql alors renvoi une erreur"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        224,
+        0
+      ],
+      "id": "50c07c39-1e66-477e-ba4c-e3803dd50cc0",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e1dbd02-a1c2-4c25-a1a3-5ba6da9e94a0",
+              "name": "Shema context",
+              "value": "Database schema:  Table: categories Columns: - id integer primary key - name text unique not null  Table: products Columns: - id integer primary key - name text not null - sku text unique not null - category_id integer references categories(id) - unit_price numeric(10,2) not null - active boolean default true  Table: customers Columns: - id integer primary key - full_name text not null - email text unique not null - country text not null  Table: orders Columns: - id integer primary key - customer_id integer references customers(id) - created_at timestamp not null - status text not null Allowed status values:   pending, paid, completed, shipped, cancelled, refunded  Table: order_items Columns: - id integer primary key - order_id integer references orders(id) - product_id integer references products(id) - quantity integer not null - unit_price numeric(10,2) not null  Relationships: - products.category_id = categories.id - orders.customer_id = customers.id - order_items.order_id = orders.id - order_items.product_id = products.id",
+              "type": "string"
+            },
+            {
+              "id": "68464f05-95c7-44d5-87d3-7d053b98d433",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "8a12e6a8-1920-4696-8c93-603fc176bfef",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        224,
+        208
+      ],
+      "id": "6a17139f-f640-4216-8ffc-6936a37a066d",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "e00PFbzUaeFMHuFL",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{$json.sql}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "43baa898-56bc-469d-8804-17c0bbcb2d94",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "YwuXAJuJLCdFlbiG",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const llmOutput = $json.output || $json.text || $json.response || \"\";\n\nlet sql = String(llmOutput).trim();\n\n// Nettoyage des éventuels blocs markdown\nsql = sql\n  .replace(/^```sql/i, \"\")\n  .replace(/^```/i, \"\")\n  .replace(/```$/i, \"\")\n  .trim();\n\n// Supprime un éventuel point-virgule final\nsql = sql.replace(/;+\\s*$/g, \"\").trim();\n\nconst forbiddenKeywords = [\n  \"INSERT\",\n  \"UPDATE\",\n  \"DELETE\",\n  \"DROP\",\n  \"ALTER\",\n  \"TRUNCATE\",\n  \"CREATE\",\n  \"REPLACE\",\n  \"GRANT\",\n  \"REVOKE\",\n  \"EXEC\",\n  \"EXECUTE\",\n  \"MERGE\",\n  \"CALL\"\n];\n\nconst upperSql = sql.toUpperCase();\n\n// Vérifie que ce n’est pas vide\nif (!sql) {\n  throw new Error(\"La réponse du LLM est vide.\");\n}\n\n// Vérifie que c’est bien une requête SELECT\nif (!upperSql.startsWith(\"SELECT\")) {\n  throw new Error(\"La requête SQL doit commencer par SELECT.\");\n}\n\n// Bloque les requêtes multiples\nif (sql.includes(\";\")) {\n  throw new Error(\"Les requêtes multiples sont interdites.\");\n}\n\n// Bloque les mots-clés dangereux\nfor (const keyword of forbiddenKeywords) {\n  const regex = new RegExp(`\\\\b${keyword}\\\\b`, \"i\");\n  if (regex.test(sql)) {\n    throw new Error(`Mot-clé SQL interdit détecté : ${keyword}`);\n  }\n}\n\n// Bloque les commentaires SQL\nif (/--|\\/\\*/.test(sql)) {\n  throw new Error(\"Les commentaires SQL sont interdits.\");\n}\n\n// Optionnel : force un LIMIT si absent\nif (!/\\bLIMIT\\b/i.test(sql)) {\n  sql += \" LIMIT 100\";\n}\n\nreturn [\n  {\n    json: {\n      sql,\n      isValid: true\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        0
+      ],
+      "id": "394d51de-ff59-4ea2-88b9-065eeb2c67c1",
+      "name": "Code in JavaScript",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "message": "Je ne peux rien faire pour toi avec cette commande",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        208
+      ],
+      "id": "ed0ffd58-395b-4a7d-8b84-a611444f71eb",
+      "name": "Chat1",
+      "webhookId": "6b8cd64a-c749-4460-9f36-d5a721f8af6d"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9c025b8e-a36d-4eaa-8abe-f911c1977de2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "980c24a176fcc37d984f79d7f5f99837e7e8b083813a134c6fe0d2a0c621faf7"
+  },
+  "id": "dfDXZu3pBjUEg6KF",
+  "tags": []
+}
